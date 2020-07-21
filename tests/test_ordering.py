@@ -8,7 +8,6 @@ pytest_plugins = ['pytester']
 
 @pytest.fixture
 def item_names_for(testdir):
-
     def _item_names_for(tests_content):
         # some strange code to extract sorted items
         items = testdir.getitems(tests_content)
@@ -149,7 +148,9 @@ def test_non_contiguous_inc_zero(item_names_for):
     def test_7(): pass
     """
 
-    assert item_names_for(tests_content) == ['test_7', 'test_3', 'test_1', 'test_2', 'test_5', 'test_4', 'test_6']
+    assert item_names_for(tests_content) == ['test_7', 'test_3', 'test_1',
+                                             'test_2', 'test_5', 'test_4',
+                                             'test_6']
 
 
 def test_non_contiguous_inc_none(item_names_for):
@@ -174,7 +175,8 @@ def test_non_contiguous_inc_none(item_names_for):
     def test_6(): pass
     """
 
-    assert item_names_for(tests_content) == ['test_2', 'test_3', 'test_1', 'test_6', 'test_5', 'test_4']
+    assert item_names_for(tests_content) == ['test_2', 'test_3', 'test_1',
+                                             'test_6', 'test_5', 'test_4']
 
 
 def test_first_mark_class(item_names_for):
@@ -238,7 +240,8 @@ def test_first_last_mark_class(item_names_for):
 
     """
 
-    assert item_names_for(tests_content) == ['test_4', 'test_5', 'test_3', 'test_1', 'test_2']
+    assert item_names_for(tests_content) == ['test_4', 'test_5', 'test_3',
+                                             'test_1', 'test_2']
 
 
 def test_order_mark_class(item_names_for):
@@ -265,7 +268,56 @@ def test_order_mark_class(item_names_for):
         def test_5(self): pass
     """
 
-    assert item_names_for(tests_content) == ['test_3', 'test_4', 'test_5', 'test_1', 'test_2']
+    assert item_names_for(tests_content) == ['test_3', 'test_4', 'test_5',
+                                             'test_1', 'test_2']
+
+
+def test_before_after(item_names_for):
+    tests_content = """
+    import pytest
+    
+    @pytest.mark.run(after='test_second')
+    def test_third(): pass
+    
+    def test_second(): pass
+    
+    @pytest.mark.run(before='test_second')
+    def test_first(): pass
+    """
+    assert item_names_for(tests_content) == ['test_first', 'test_second',
+                                             'test_third']
+
+
+def test_invalid_test_name_is_ignored(item_names_for):
+    tests_content = """
+    import pytest
+
+    @pytest.mark.run(after='test_second')
+    def test_third(): pass
+
+    def test_second(): pass
+
+    @pytest.mark.run(before='test_send')
+    def test_first(): pass
+    """
+    assert item_names_for(tests_content) == ['test_second', 'test_third',
+                                             'test_first']
+
+
+def test_loop_is_ignored(item_names_for):
+    tests_content = """
+    import pytest
+
+    @pytest.mark.run(after='test_first')
+    def test_third(): pass
+    
+    def test_second(): pass
+
+    @pytest.mark.run(after='test_third')
+    def test_first(): pass
+    """
+    assert item_names_for(tests_content) == ['test_first', 'test_third',
+                                             'test_second']
 
 
 def test_markers_registered(capsys):
