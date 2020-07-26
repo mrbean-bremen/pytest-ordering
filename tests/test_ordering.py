@@ -1,24 +1,9 @@
 # -*- coding: utf-8 -*-
-import re
 import warnings
 
 import pytest
 
 pytest_plugins = ['pytester']
-
-
-@pytest.fixture
-def item_names_for(testdir):
-
-    def _item_names_for(tests_content):
-        # some strange code to extract sorted items
-        items = testdir.getitems(tests_content)
-        hook = testdir.config.hook
-        hook.pytest_collection_modifyitems(session=items[0].session,
-                                           config=testdir.config, items=items)
-        return [item.name for item in items]
-
-    return _item_names_for
 
 
 def test_no_marks(item_names_for):
@@ -150,7 +135,9 @@ def test_non_contiguous_inc_zero(item_names_for):
     def test_7(): pass
     """
 
-    assert item_names_for(tests_content) == ['test_7', 'test_3', 'test_1', 'test_2', 'test_5', 'test_4', 'test_6']
+    assert item_names_for(tests_content) == ['test_7', 'test_3', 'test_1',
+                                             'test_2', 'test_5', 'test_4',
+                                             'test_6']
 
 
 def test_non_contiguous_inc_none(item_names_for):
@@ -175,7 +162,8 @@ def test_non_contiguous_inc_none(item_names_for):
     def test_6(): pass
     """
 
-    assert item_names_for(tests_content) == ['test_2', 'test_3', 'test_1', 'test_6', 'test_5', 'test_4']
+    assert item_names_for(tests_content) == ['test_2', 'test_3', 'test_6',
+                                             'test_1', 'test_5', 'test_4']
 
 
 def test_first_mark_class(item_names_for):
@@ -239,7 +227,8 @@ def test_first_last_mark_class(item_names_for):
 
     """
 
-    assert item_names_for(tests_content) == ['test_4', 'test_5', 'test_3', 'test_1', 'test_2']
+    assert item_names_for(tests_content) == ['test_4', 'test_5', 'test_3',
+                                             'test_1', 'test_2']
 
 
 def test_order_mark_class(item_names_for):
@@ -266,7 +255,8 @@ def test_order_mark_class(item_names_for):
         def test_5(self): pass
     """
 
-    assert item_names_for(tests_content) == ['test_3', 'test_4', 'test_5', 'test_1', 'test_2']
+    assert item_names_for(tests_content) == ['test_3', 'test_4', 'test_5',
+                                             'test_1', 'test_2']
 
 
 def test_relative_to_other_tests(item_names_for):
@@ -282,6 +272,7 @@ def test_relative_to_other_tests(item_names_for):
     def test_1(): pass
     """
     assert item_names_for(tests_content) == ['test_1', 'test_2', 'test_3']
+
 
 def test_relative_to_other_invalid_tests(item_names_for):
     tests_content = """

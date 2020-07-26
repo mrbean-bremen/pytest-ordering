@@ -35,8 +35,8 @@ def pytest_configure(config):
     )
 
     config_line = (
-        'run: specify ordering information for when tests should run '
-        'in relation to one another. ' + provided_by_pytest_ordering
+            'run: specify ordering information for when tests should run '
+            'in relation to one another. ' + provided_by_pytest_ordering
     )
     config.addinivalue_line('markers', config_line)
 
@@ -68,7 +68,7 @@ def pytest_collection_modifyitems(session, config, items):
                 if before:
                     before_items.setdefault(before, []).append(item)
                     continue
-                
+
                 after = mark.kwargs.get('after')
                 if after:
                     after_items.setdefault(after, []).append(item)
@@ -79,27 +79,39 @@ def pytest_collection_modifyitems(session, config, items):
         grouped_items.setdefault(order, []).append(item)
 
     sorted_items = []
-    unordered_items = [grouped_items.pop(None, [])]
+    unordered_items = grouped_items.pop(None, [])
 
     start_list = sorted((i for i in grouped_items.items() if i[0] >= 0),
                         key=operator.itemgetter(0))
-    end_list = sorted((i for i in grouped_items.items() if i[0] < 0),
-                      key=operator.itemgetter(0))
 
-    sorted_items.extend([i[1] for i in start_list])
+    index = 0
+    for i, item_list in start_list:
+        while i > index and unordered_items:
+            sorted_items.append(unordered_items.pop(0))
+            index += 1
+        sorted_items.extend(item_list)
+        index += len(item_list)
+
+    end_list = reversed(sorted((i for i in grouped_items.items() if i[0] < 0),
+                               key=operator.itemgetter(0)))
+    index = -1
+    sorted_end_list = []
+    for i, item_list in end_list:
+        while i < index and unordered_items:
+            sorted_end_list.append(unordered_items.pop())
+            index -= 1
+        sorted_end_list.extend(reversed(item_list))
+        index -= len(item_list)
+
     sorted_items.extend(unordered_items)
-    sorted_items.extend([i[1] for i in end_list])
+    sorted_items.extend(reversed(sorted_end_list))
+    items[:] = sorted_items
 
-    items[:] = [item for sublist in sorted_items for item in sublist]
-    
     def _get_item_index_by_name(item_name):
-        index = None
         for i, item in enumerate(items):
             if getattr(item, 'name') == item_name:
-                index = i
-                break
-        return index
-        
+                return i
+
     for before_item_relative, _before_items in before_items.items():
         index = _get_item_index_by_name(before_item_relative)
         if index is not None:
@@ -108,12 +120,12 @@ def pytest_collection_modifyitems(session, config, items):
         else:
             if len(_before_items) == 1:
                 message_schema = "%s, indicated at parameter before of" \
-                               + " %s, doesn't exist"
+                                 + " %s, doesn't exist"
                 message = message_schema % (before_item_relative,
                                             _before_items[0].name)
             else:
                 message_schema = "%s, indicated at parameter before of" \
-                               + " %s, doesn't exist"
+                                 + " %s, doesn't exist"
                 test_names = ""
                 for i, before_item in enumerate(_before_items):
                     test_names += before_item.name
@@ -124,20 +136,21 @@ def pytest_collection_modifyitems(session, config, items):
                 message = message_schema % (before_item_relative, test_names)
             warnings.warn(message, SyntaxWarning)
             items.extend(_before_items)
+
     for after_item_relative, _after_items in after_items.items():
         index = _get_item_index_by_name(after_item_relative)
         if index is not None:
             for after_item in _after_items:
-                items.insert(index+1, after_item)
+                items.insert(index + 1, after_item)
         else:
             if len(_after_items) == 1:
                 message_schema = "%s, indicated at parameter after of" \
-                               + " %s, doesn't exist"
+                                 + " %s, doesn't exist"
                 message = message_schema % (after_item_relative,
                                             _after_items[0].name)
             else:
                 message_schema = "%s, indicated at parameter after of" \
-                               + " %s, doesn't exist"
+                                 + " %s, doesn't exist"
                 test_names = ""
                 for i, after_item in enumerate(_after_items):
                     test_names += after_item.name
